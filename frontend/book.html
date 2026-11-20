@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Book a car – DriveEasy</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/book.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11m-14 0h14m-14 0a2 2 0 0 0-2 2v3h2m14-5a2 2 0 0 1 2 2v3h-2M5 16a2 2 0 1 0 4 0m-4 0a2 2 0 1 1 4 0m6 0a2 2 0 1 0 4 0m-4 0a2 2 0 1 1 4 0m-10 0h6"/></svg>
+        DriveEasy
+      </a>
+      <nav>
+        <a class="hide-sm" href="/">Home</a>
+        <a href="#fleet">Fleet</a>
+        <a href="#find">My bookings</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="page-head">
+      <h1>Book a car</h1>
+      <p class="muted">Pick your dates to see which cars are free.</p>
+      <form id="search-form" class="search panel">
+        <label>Pick-up <input type="date" name="start" required></label>
+        <label>Return <input type="date" name="end" required></label>
+        <label>Category
+          <select name="category"><option value="">All categories</option></select>
+        </label>
+        <button class="btn btn--primary" type="submit">Check availability</button>
+      </form>
+    </section>
+
+    <section id="fleet" class="section">
+      <div class="section__head">
+        <h2>Available cars</h2>
+        <span class="muted" id="fleet-note"></span>
+      </div>
+      <div class="grid" id="fleet-grid"></div>
+    </section>
+
+    <section id="find" class="section">
+      <div class="find panel">
+        <div>
+          <h2>My bookings</h2>
+          <p class="muted">Enter the email you booked with to see all your bookings. Add a booking ID if you only want that one.</p>
+        </div>
+        <form id="find-form" class="find__form">
+          <label>Email <input name="email" type="email" required autocomplete="email" placeholder="you@example.com"></label>
+          <label>Booking ID <span class="optional">(optional)</span> <input name="booking_id" placeholder="BK-1001"></label>
+          <button class="btn btn--primary" type="submit">Show bookings</button>
+        </form>
+        <div class="find__results" id="find-result"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    DriveEasy Rentals · <a href="/">Home</a>
+  </footer>
+
+  <dialog id="booking-dialog" class="dialog">
+    <form id="booking-form" method="dialog">
+      <div class="dialog__head">
+        <div>
+          <span class="badge" id="dlg-category"></span>
+          <h3 id="dlg-title">Book car</h3>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close">&times;</button>
+      </div>
+
+      <div class="dialog__body" data-step="form">
+        <div class="form-grid">
+          <label>Full name <input name="name" required minlength="2" autocomplete="name"></label>
+          <label>Email <input name="email" type="email" required autocomplete="email"></label>
+          <label>Phone <input name="phone" autocomplete="tel" placeholder="03xx-xxxxxxx"></label>
+          <label>Driving licence no. <input name="license_no" required minlength="4"></label>
+          <label>Pick-up <input name="start_date" type="date" required></label>
+          <label>Return <input name="end_date" type="date" required></label>
+        </div>
+        <fieldset class="pay">
+          <legend>Payment method</legend>
+          <label><input type="radio" name="payment_method" value="cash" checked> Cash <small>no fee</small></label>
+          <label><input type="radio" name="payment_method" value="card"> Card <small>2% fee</small></label>
+          <label><input type="radio" name="payment_method" value="wallet"> Wallet <small>Rs 100 fee</small></label>
+        </fieldset>
+        <div class="quote" id="quote">Select dates to see the price.</div>
+        <p class="form-error" id="form-error" role="alert"></p>
+      </div>
+
+      <div class="dialog__body success" data-step="done" hidden>
+        <div class="success__icon" aria-hidden="true">✓</div>
+        <h3>Booking confirmed</h3>
+        <p>Your booking ID is</p>
+        <p class="success__id" id="done-id"></p>
+        <p class="muted" id="done-text"></p>
+      </div>
+
+      <div class="dialog__foot" data-step="form">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" id="confirm-btn">Confirm booking</button>
+      </div>
+      <div class="dialog__foot" data-step="done" hidden>
+        <button type="button" class="btn btn--primary" data-close>Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/js/book.js"></script>
+</body>
+</html>

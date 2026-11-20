@@ -1,0 +1,28 @@
+"""Default fleet loaded the first time the app runs (rates in PKR per day)."""
+
+DEFAULT_FLEET = [
+    {"vehicle_id": "V-101", "type": "EconomyCar", "make": "Suzuki", "model": "Alto",
+     "year": 2023, "daily_rate": 4500, "seats": 4, "transmission": "Manual"},
+    {"vehicle_id": "V-102", "type": "EconomyCar", "make": "Toyota", "model": "Yaris",
+     "year": 2022, "daily_rate": 7000, "seats": 5, "transmission": "Automatic"},
+    {"vehicle_id": "V-103", "type": "EconomyCar", "make": "Honda", "model": "City",
+     "year": 2023, "daily_rate": 7500, "seats": 5, "transmission": "Automatic"},
+    {"vehicle_id": "V-201", "type": "SUV", "make": "Toyota", "model": "Fortuner",
+     "year": 2022, "daily_rate": 18000, "seats": 7, "transmission": "Automatic",
+     "four_wheel_drive": True},
+    {"vehicle_id": "V-202", "type": "SUV", "make": "Kia", "model": "Sportage",
+     "year": 2023, "daily_rate": 13000, "seats": 5, "transmission": "Automatic",
+     "four_wheel_drive": False},
+    {"vehicle_id": "V-301", "type": "LuxuryCar", "make": "Mercedes-Benz", "model": "C200",
+     "year": 2022, "daily_rate": 35000, "seats": 5, "transmission": "Automatic",
+     "chauffeur": True},
+    {"vehicle_id": "V-302", "type": "LuxuryCar", "make": "Audi", "model": "A6",
+     "year": 2021, "daily_rate": 32000, "seats": 5, "transmission": "Automatic",
+     "chauffeur": False},
+    {"vehicle_id": "V-401", "type": "ElectricCar", "make": "BYD", "model": "Atto 3",
+     "year": 2024, "daily_rate": 15000, "seats": 5, "transmission": "Automatic",
+     "range_km": 420},
+    {"vehicle_id": "V-402", "type": "ElectricCar", "make": "MG", "model": "ZS EV",
+     "year": 2023, "daily_rate": 12000, "seats": 5, "transmission": "Automatic",
+     "range_km": 320},
+]

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin – DriveEasy</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <!-- ============ login ============ -->
+  <section id="login-view" class="login" hidden>
+    <form id="login-form" class="login__card panel">
+      <div class="login__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </div>
+      <h1>Admin login</h1>
+      <p class="muted">Enter the admin password to manage bookings and the fleet.</p>
+      <label>Password
+        <input type="password" name="password" required autocomplete="current-password" autofocus>
+      </label>
+      <p class="form-error" id="login-error" role="alert"></p>
+      <button class="btn btn--primary btn--lg" type="submit">Log in</button>
+      <a class="login__back" href="/">← Back to site</a>
+    </form>
+  </section>
+
+  <!-- ============ dashboard ============ -->
+  <div id="app-view" hidden>
+    <header class="topbar">
+      <div class="wrap topbar__inner">
+        <a class="brand" href="/admin">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11m-14 0h14m-14 0a2 2 0 0 0-2 2v3h2m14-5a2 2 0 0 1 2 2v3h-2M5 16a2 2 0 1 0 4 0m-4 0a2 2 0 1 1 4 0m6 0a2 2 0 1 0 4 0m-4 0a2 2 0 1 1 4 0m-10 0h6"/></svg>
+          DriveEasy <small>Admin</small>
+        </a>
+        <nav>
+          <a class="hide-sm" href="/" target="_blank" rel="noopener">View site</a>
+          <button class="btn btn--sm" id="logout-btn">Log out</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap admin">
+      <div class="tabs admin__tabs" id="main-tabs" role="tablist">
+        <button class="tab is-active" data-view="overview">Overview</button>
+        <button class="tab" data-view="bookings">Bookings</button>
+        <button class="tab" data-view="fleet">Fleet</button>
+        <button class="tab" data-view="customers">Customers</button>
+      </div>
+
+      <!-- overview -->
+      <section data-panel="overview">
+        <div class="stats" id="stat-tiles"></div>
+        <div class="two-col">
+          <div class="panel box">
+            <h2>Bookings by status</h2>
+            <div class="bars" id="status-bars"></div>
+          </div>
+          <div class="panel box">
+            <h2>Revenue by category</h2>
+            <div class="bars" id="revenue-bars"></div>
+          </div>
+        </div>
+        <div class="section__head">
+          <h2>Latest bookings</h2>
+          <button class="btn btn--sm" data-goto="bookings">See all</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table"><thead><tr>
+            <th>ID</th><th>Customer</th><th>Car</th><th>Dates</th><th class="num">Total</th><th>Status</th>
+          </tr></thead><tbody id="recent-rows"></tbody></table>
+        </div>
+      </section>
+
+      <!-- bookings -->
+      <section data-panel="bookings" hidden>
+        <div class="toolbar">
+          <div class="tabs" id="status-tabs">
+            <button class="tab is-active" data-status="">All</button>
+            <button class="tab" data-status="confirmed">Confirmed</button>
+            <button class="tab" data-status="completed">Completed</button>
+            <button class="tab" data-status="cancelled">Cancelled</button>
+          </div>
+          <input type="search" id="booking-search" placeholder="Search ID, name, email or car">
+        </div>
+        <div class="table-wrap">
+          <table class="table"><thead><tr>
+            <th>ID</th><th>Customer</th><th>Car</th><th>Dates</th><th>Payment</th>
+            <th class="num">Total</th><th>Status</th><th></th>
+          </tr></thead><tbody id="booking-rows"></tbody></table>
+        </div>
+      </section>
+
+      <!-- fleet -->
+      <section data-panel="fleet" hidden>
+        <div class="toolbar">
+          <p class="muted">Retired cars are hidden from customers but stay in the booking history.</p>
+          <button class="btn btn--primary" id="add-car-btn">+ Add car</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table"><thead><tr>
+            <th>Car</th><th>Category</th><th>Daily rate (Rs)</th><th>Status</th>
+            <th class="num">Bookings</th><th class="num">Revenue</th><th></th>
+          </tr></thead><tbody id="fleet-rows"></tbody></table>
+        </div>
+      </section>
+
+      <!-- customers -->
+      <section data-panel="customers" hidden>
+        <div class="table-wrap">
+          <table class="table"><thead><tr>
+            <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Licence</th>
+            <th class="num">Bookings</th><th class="num">Spent</th>
+          </tr></thead><tbody id="customer-rows"></tbody></table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ add car dialog ============ -->
+  <dialog id="car-dialog" class="dialog">
+    <form id="car-form" method="dialog">
+      <div class="dialog__head">
+        <h3>Add a car</h3>
+        <button type="button" class="icon-btn" data-close aria-label="Close">&times;</button>
+      </div>
+      <div class="dialog__body">
+        <div class="form-grid">
+          <label>Type
+            <select name="type" required>
+              <option value="EconomyCar">Economy</option>
+              <option value="SUV">SUV</option>
+              <option value="LuxuryCar">Luxury</option>
+              <option value="ElectricCar">Electric</option>
+            </select>
+          </label>
+          <label>Transmission
+            <select name="transmission">
+              <option>Automatic</option>
+              <option>Manual</option>
+            </select>
+          </label>
+          <label>Make <input name="make" required placeholder="Toyota"></label>
+          <label>Model <input name="model" required placeholder="Corolla"></label>
+          <label>Year <input name="year" type="number" required min="1990" max="2100"></label>
+          <label>Seats <input name="seats" type="number" required min="2" max="15" value="5"></label>
+          <label>Daily rate (Rs) <input name="daily_rate" type="number" required min="1" step="100"></label>
+          <label data-extra="ElectricCar" hidden>Range (km) <input name="range_km" type="number" min="50" value="350"></label>
+          <label class="check" data-extra="SUV" hidden><input type="checkbox" name="four_wheel_drive"> 4x4 drive</label>
+          <label class="check" data-extra="LuxuryCar" hidden><input type="checkbox" name="chauffeur"> Chauffeur available</label>
+        </div>
+        <p class="form-error" id="car-error" role="alert"></p>
+      </div>
+      <div class="dialog__foot">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" id="car-save">Add car</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/rental.db
+data/rental.db-*
+data/rental_data.json
+data/*.tmp

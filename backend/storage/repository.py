@@ -8,8 +8,11 @@ Records passed to `save()` are the models' own `to_dict()` output.
 """
 
 import copy
+import hashlib
 import json
 import sqlite3
+import threading
+import time
 from abc import ABC, abstractmethod
 from contextlib import closing
 from pathlib import Path
@@ -98,6 +101,10 @@ class SqliteRepository(Repository):
         name  TEXT PRIMARY KEY,
         value INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS admin_sessions (
+        token_hash TEXT PRIMARY KEY,
+        expires_at INTEGER NOT NULL
+    );
     """
 
     def __init__(self, db_path: str | Path):
@@ -116,57 +123,140 @@ class SqliteRepository(Repository):
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    @staticmethod
+    def _rows_as_dicts(cursor) -> list[dict]:
+        columns = [column[0] for column in cursor.description or ()]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
     def load(self) -> dict:
         with closing(self._connect()) as conn:
             vehicles = []
-            for row in conn.execute("SELECT * FROM vehicles ORDER BY vehicle_id"):
-                data = dict(row)
+            for data in self._rows_as_dicts(
+                    conn.execute("SELECT * FROM vehicles ORDER BY vehicle_id")):
                 data.update(json.loads(data.pop("extras") or "{}"))
                 data["active"] = bool(data["active"])
                 vehicles.append(data)
-            customers = [dict(r) for r in conn.execute("SELECT * FROM customers ORDER BY customer_id")]
-            bookings = [dict(r) for r in conn.execute("SELECT * FROM bookings ORDER BY booking_id")]
-            counters = {r["name"]: r["value"] for r in conn.execute("SELECT * FROM counters")}
+            customers = self._rows_as_dicts(
+                conn.execute("SELECT * FROM customers ORDER BY customer_id"))
+            bookings = self._rows_as_dicts(
+                conn.execute("SELECT * FROM bookings ORDER BY booking_id"))
+            counters = {
+                row["name"]: row["value"]
+                for row in self._rows_as_dicts(conn.execute("SELECT * FROM counters"))
+            }
         return {"vehicles": vehicles, "customers": customers, "bookings": bookings,
                 "counters": counters}
 
     def save(self, *, vehicles=(), customers=(), bookings=(), counters=None) -> None:
-        with closing(self._connect()) as conn, conn:  # `with conn` = one transaction
-            for v in vehicles:
-                extras = {k: v[k] for k in VEHICLE_EXTRAS if k in v}
+        with closing(self._connect()) as conn:
+            try:
+                conn.execute("BEGIN")
+                self._save_records(conn, vehicles, customers, bookings, counters)
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+
+    def store_admin_session(self, token: str, expires_at: int) -> None:
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        with closing(self._connect()) as conn:
+            try:
+                conn.execute("BEGIN")
+                conn.execute("DELETE FROM admin_sessions WHERE expires_at <= ?",
+                             (int(time.time()),))
                 conn.execute(
-                    """INSERT INTO vehicles (vehicle_id, type, make, model, year, daily_rate,
-                                             seats, transmission, extras, active)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                       ON CONFLICT (vehicle_id) DO UPDATE SET
-                         type = excluded.type, make = excluded.make, model = excluded.model,
-                         year = excluded.year, daily_rate = excluded.daily_rate,
-                         seats = excluded.seats, transmission = excluded.transmission,
-                         extras = excluded.extras, active = excluded.active""",
-                    (v["vehicle_id"], v["type"], v["make"], v["model"], v["year"],
-                     v["daily_rate"], v["seats"], v["transmission"], json.dumps(extras),
-                     int(v.get("active", True))))
-            for c in customers:
-                conn.execute(
-                    """INSERT INTO customers (customer_id, name, email, phone, license_no)
-                       VALUES (?, ?, ?, ?, ?)
-                       ON CONFLICT (customer_id) DO UPDATE SET
-                         name = excluded.name, email = excluded.email,
-                         phone = excluded.phone, license_no = excluded.license_no""",
-                    (c["customer_id"], c["name"], c["email"], c.get("phone", ""), c["license_no"]))
-            for b in bookings:
-                r = self.booking_row(b)
-                conn.execute(
-                    """INSERT INTO bookings (booking_id, customer_id, vehicle_id, start_date,
-                                             end_date, rent, payment_method, fee, total,
-                                             status, created_at)
-                       VALUES (:booking_id, :customer_id, :vehicle_id, :start_date, :end_date,
-                               :rent, :payment_method, :fee, :total, :status, :created_at)
-                       ON CONFLICT (booking_id) DO UPDATE SET status = excluded.status""", r)
-            for name, value in (counters or {}).items():
-                conn.execute("""INSERT INTO counters (name, value) VALUES (?, ?)
-                                ON CONFLICT (name) DO UPDATE SET value = excluded.value""",
-                             (name, value))
+                    """INSERT INTO admin_sessions (token_hash, expires_at) VALUES (?, ?)
+                       ON CONFLICT (token_hash) DO UPDATE SET expires_at = excluded.expires_at""",
+                    (token_hash, expires_at))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+
+    def is_admin_session_valid(self, token: str, now: int) -> bool:
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        with closing(self._connect()) as conn:
+            row = conn.execute(
+                "SELECT expires_at FROM admin_sessions WHERE token_hash = ?", (token_hash,)
+            ).fetchone()
+            return bool(row and row[0] >= now)
+
+    def delete_admin_session(self, token: str) -> None:
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        with closing(self._connect()) as conn:
+            try:
+                conn.execute("DELETE FROM admin_sessions WHERE token_hash = ?", (token_hash,))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+
+    def _save_records(self, conn, vehicles, customers, bookings, counters) -> None:
+        for v in vehicles:
+            extras = {k: v[k] for k in VEHICLE_EXTRAS if k in v}
+            conn.execute(
+                """INSERT INTO vehicles (vehicle_id, type, make, model, year, daily_rate,
+                                         seats, transmission, extras, active)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT (vehicle_id) DO UPDATE SET
+                     type = excluded.type, make = excluded.make, model = excluded.model,
+                     year = excluded.year, daily_rate = excluded.daily_rate,
+                     seats = excluded.seats, transmission = excluded.transmission,
+                     extras = excluded.extras, active = excluded.active""",
+                (v["vehicle_id"], v["type"], v["make"], v["model"], v["year"],
+                 v["daily_rate"], v["seats"], v["transmission"], json.dumps(extras),
+                 int(v.get("active", True))))
+        for c in customers:
+            conn.execute(
+                """INSERT INTO customers (customer_id, name, email, phone, license_no)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT (customer_id) DO UPDATE SET
+                     name = excluded.name, email = excluded.email,
+                     phone = excluded.phone, license_no = excluded.license_no""",
+                (c["customer_id"], c["name"], c["email"], c.get("phone", ""), c["license_no"]))
+        for b in bookings:
+            r = self.booking_row(b)
+            conn.execute(
+                """INSERT INTO bookings (booking_id, customer_id, vehicle_id, start_date,
+                                         end_date, rent, payment_method, fee, total,
+                                         status, created_at)
+                   VALUES (:booking_id, :customer_id, :vehicle_id, :start_date, :end_date,
+                           :rent, :payment_method, :fee, :total, :status, :created_at)
+                   ON CONFLICT (booking_id) DO UPDATE SET status = excluded.status""", r)
+        for name, value in (counters or {}).items():
+            conn.execute("""INSERT INTO counters (name, value) VALUES (?, ?)
+                            ON CONFLICT (name) DO UPDATE SET value = excluded.value""",
+                         (name, value))
+
+
+class TursoRepository(SqliteRepository):
+    """Remote Turso database accessed over HTTP for serverless deployments."""
+
+    _initialized_databases: set[str] = set()
+    _initialization_lock = threading.Lock()
+
+    def __init__(self, database_url: str, auth_token: str):
+        if not database_url or not auth_token:
+            raise ValueError("TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are required.")
+        self._database_url = database_url
+        self._auth_token = auth_token
+        with self._initialization_lock:
+            if database_url not in self._initialized_databases:
+                with closing(self._connect()) as conn:
+                    try:
+                        for statement in self.SCHEMA.split(";"):
+                            if statement.strip():
+                                conn.execute(statement)
+                        conn.commit()
+                    except Exception:
+                        conn.rollback()
+                        raise
+                self._initialized_databases.add(database_url)
+
+    def _connect(self):
+        import turso_serverless
+
+        return turso_serverless.connect(self._database_url, auth_token=self._auth_token)
 
 
 class InMemoryRepository(Repository):

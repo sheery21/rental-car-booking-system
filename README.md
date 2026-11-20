@@ -1,6 +1,6 @@
 # Rental Car Booking System
 
-A small car-rental web app with a landing page, a booking page and an admin panel. The backend is object-oriented Python that uses only the standard library. Data is stored in a SQLite database. The frontend is plain HTML, CSS and JavaScript (ES modules with classes).
+A small car-rental web app with a landing page, a booking page and an admin panel. The backend is object-oriented Python. It uses SQLite locally and Turso when deployed to Vercel. The frontend is plain HTML, CSS and JavaScript (ES modules with classes).
 
 ## Run it
 
@@ -36,6 +36,36 @@ If you don't set one, the password is **`admin123`** and the server prints a war
 - A successful login sets an `HttpOnly`, `SameSite=Strict` cookie that lasts 8 hours.
 - After 5 wrong passwords from the same computer, login is blocked for 5 minutes.
 - Every `/api/admin/...` endpoint (except login, logout and session) returns 401 without a valid session.
+
+## Deploy to Vercel with Turso
+
+The repository root is the Vercel project root. `pyproject.toml` points Vercel to the
+Flask application in `app.py`; the existing `main.py` entry point remains available for
+local development.
+
+1. Import the GitHub repository into Vercel, keeping the root directory as `./`.
+2. In the Vercel project, open **Storage**, install/connect Turso, and attach the database
+   to this project.
+3. Ensure these environment variables are available to the project:
+   - `TURSO_DATABASE_URL`
+   - `TURSO_AUTH_TOKEN`
+   - `ADMIN_PASSWORD` (at least 6 characters; use a strong unique password)
+4. Deploy or redeploy. On first API request, the application creates the tables and seeds
+   the default fleet if the database is empty.
+
+The Turso variables are read by `app.py`; when they are absent on Vercel, API requests
+return an error rather than silently using an ephemeral SQLite file. The database schema
+is also used for admin sessions, so login remains valid across serverless instances and
+logout revokes the stored session.
+
+Vercel local development can be run with:
+
+```bash
+python -m pip install -r requirements.txt
+python -m flask --app app run
+```
+
+For local development without Turso, the Flask app uses `data/rental.db`.
 
 ## What it does
 
@@ -86,10 +116,11 @@ Use `--db path/to/other.db` to point at another database file (handy for testing
 ```
 rental-car-booking-system/
 ├── main.py                  # composition root: SqliteRepository -> RentalService, AuthService -> server
+├── app.py                   # Flask entry point for Vercel
 ├── backend/
 │   ├── models/              # Vehicle (+4 types), Customer/Person, Booking, Payment (+3), factories
 │   ├── services/            # RentalService, AuthService, seed data
-│   ├── storage/             # Repository (abstract), SqliteRepository, InMemoryRepository
+│   ├── storage/             # Repository, SqliteRepository, TursoRepository, InMemoryRepository
 │   ├── api/                 # Request, ApiResponse, Router, RentalAPI, RentalRequestHandler
 │   └── exceptions.py        # RentalError, NotFoundError, VehicleNotAvailableError, AuthError ...
 ├── frontend/
@@ -122,7 +153,7 @@ The last page of [docs/project_structure.pdf](docs/project_structure.pdf) maps e
 python -m unittest discover tests
 ```
 
-There are 16 tests. They cover pricing, validation, overlapping bookings, customer lookup and cancel, adding and retiring cars, admin login and lock-out, and the SQLite database surviving a restart.
+Tests cover pricing, validation, overlapping bookings, customer lookup and cancel, adding and retiring cars, admin login and lock-out, SQLite persistence, and the Vercel adapter.
 
 ## Rebuild the diagram PDF
 

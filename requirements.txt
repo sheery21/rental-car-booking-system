@@ -1,3 +1,4 @@
-# The app itself uses only the Python standard library.
 # reportlab is needed only to rebuild docs/project_structure.pdf
 reportlab>=4.0
+Flask>=3.0,<4
+turso_serverless

@@ -60,7 +60,8 @@ def _build_repository():
             "to the Vercel project environment variables."
         )
 
-    repository = SqliteRepository(BASE_DIR / "data" / "rental.db")
+    local_database = os.getenv("LOCAL_DATABASE_PATH") or BASE_DIR / "data" / "rental.db"
+    repository = SqliteRepository(local_database)
     import_legacy_json(BASE_DIR / "data" / "rental_data.json", repository)
     return repository
 

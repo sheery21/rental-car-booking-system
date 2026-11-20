@@ -66,6 +66,8 @@ python -m flask --app app run
 ```
 
 For local development without Turso, the Flask app uses `data/rental.db`.
+Set `LOCAL_DATABASE_PATH` to use another local SQLite file; if it is empty, the legacy
+`data/rental_data.json` is imported into it on first run.
 
 ## What it does
 

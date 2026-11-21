@@ -148,3 +148,15 @@ input[type="checkbox"], input[type="radio"] { width: auto; }
   .topbar nav .hide-sm { display: none; }
   .brand small { display: none; }
 }
+
+@media (max-width: 360px) {
+  .wrap { width: min(1160px, 100% - 24px); }
+  .topbar__inner { gap: 8px; }
+  .brand { gap: 6px; font-size: 1rem; }
+  .brand svg { width: 24px; height: 24px; }
+  .topbar nav { gap: 8px; }
+  .topbar nav a { font-size: .82rem; }
+  .topbar nav a[href="/book#find"],
+  .topbar nav a[href="#find"] { display: none; }
+  .topbar nav .btn { padding: 6px 8px; font-size: .75rem; }
+}

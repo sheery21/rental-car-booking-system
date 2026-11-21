@@ -97,6 +97,6 @@
 }
 @media (max-width: 520px) {
   .cats, .features { grid-template-columns: 1fr; }
-  .hero__facts { gap: 22px; }
+  .hero__facts { gap: 16px; flex-wrap: wrap; }
   .cta { padding: 26px 22px; }
 }

@@ -63,3 +63,8 @@
   .find__form { grid-template-columns: 1fr; }
   .booking-card { grid-template-columns: 1fr 1fr; }
 }
+
+@media (max-width: 360px) {
+  .search { grid-template-columns: minmax(0, 1fr); }
+  .search .btn { grid-column: auto; }
+}

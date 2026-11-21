@@ -41,7 +41,8 @@ If you don't set one, the password is **`admin123`** and the server prints a war
 
 The repository root is the Vercel project root. `pyproject.toml` points Vercel to the
 Flask application in `app.py`; the existing `main.py` entry point remains available for
-local development.
+local development. Vercel Functions are pinned to Tokyo (`hnd1`) to stay near the Turso
+database region configured for this project.
 
 1. Import the GitHub repository into Vercel, keeping the root directory as `./`.
 2. In the Vercel project, open **Storage**, install/connect Turso, and attach the database

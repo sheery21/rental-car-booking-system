@@ -56,6 +56,8 @@
 .success p { margin: 4px 0; }
 .success__icon { width: 52px; height: 52px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; font-size: 1.6rem; color: var(--ok); background: var(--ok-bg); }
 .success__id { font-size: 1.8rem; font-weight: 800; letter-spacing: .04em; color: var(--brand); }
+.success__copy { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.success__copy-feedback { min-height: 1.2em; margin: 0; color: var(--muted); font-size: .85rem; }
 
 @media (max-width: 760px) {
   .search { grid-template-columns: 1fr 1fr; }

@@ -98,7 +98,11 @@
         <div class="success__icon" aria-hidden="true">✓</div>
         <h3>Booking confirmed</h3>
         <p>Your booking ID is</p>
-        <p class="success__id" id="done-id"></p>
+        <div class="success__copy">
+          <p class="success__id" id="done-id"></p>
+          <button type="button" class="btn btn--sm" id="copy-booking-id">Copy ID</button>
+        </div>
+        <p class="success__copy-feedback" id="copy-booking-feedback" role="status" aria-live="polite"></p>
         <p class="muted" id="done-text"></p>
       </div>
 

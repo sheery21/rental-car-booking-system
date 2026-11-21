@@ -59,10 +59,12 @@ class BookingDialog {
     this.quoteEl = document.getElementById("quote");
     this.errorEl = document.getElementById("form-error");
     this.confirmBtn = document.getElementById("confirm-btn");
+    this.copyFeedback = document.getElementById("copy-booking-feedback");
     this.vehicle = null;
     this.quoteTimer = null;
 
     this.dialog.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => this.dialog.close()));
+    document.getElementById("copy-booking-id").addEventListener("click", () => this.copyBookingId());
     this.form.addEventListener("change", (e) => {
       if (["start_date", "end_date", "payment_method"].includes(e.target.name)) this.scheduleQuote();
     });
@@ -88,6 +90,16 @@ class BookingDialog {
     this.errorEl.textContent = "";
     this.dialog.showModal();
     this.updateQuote();
+  }
+
+  async copyBookingId() {
+    const bookingId = document.getElementById("done-id").textContent;
+    try {
+      await navigator.clipboard.writeText(bookingId);
+      this.copyFeedback.textContent = "Booking ID copied.";
+    } catch {
+      this.copyFeedback.textContent = "Copy failed. Please copy the ID manually.";
+    }
   }
 
   scheduleQuote() {
@@ -132,6 +144,7 @@ class BookingDialog {
     try {
       const booking = await this.api.post("/api/bookings", body);
       document.getElementById("done-id").textContent = booking.booking_id;
+      this.copyFeedback.textContent = "";
       document.getElementById("done-text").textContent =
         `${booking.vehicle_name} · ${prettyDate(booking.start_date)} → ${prettyDate(booking.end_date)} · ` +
         `${money(booking.payment.total)} (${booking.payment.method}). Keep this ID to find or cancel your booking.`;

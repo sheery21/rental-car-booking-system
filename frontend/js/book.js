@@ -19,12 +19,12 @@ class FleetView {
   }
 
   render(vehicles, range) {
-    this.vehicles = vehicles;
-    const free = vehicles.filter((v) => v.available).length;
-    this.note.textContent = `${free} of ${vehicles.length} free · ${prettyDate(range.start)} → ${prettyDate(range.end)}`;
-    this.grid.innerHTML = vehicles.length
-      ? vehicles.map((v) => this.card(v)).join("")
-      : `<div class="empty">No cars in this category.</div>`;
+    this.vehicles = vehicles.filter((v) => v.available);
+    const count = this.vehicles.length;
+    this.note.textContent = `${count} car${count === 1 ? "" : "s"} available · ${prettyDate(range.start)} → ${prettyDate(range.end)}`;
+    this.grid.innerHTML = count
+      ? this.vehicles.map((v) => this.card(v)).join("")
+      : `<div class="empty">No cars are available for these dates.</div>`;
   }
 
   card(v) {

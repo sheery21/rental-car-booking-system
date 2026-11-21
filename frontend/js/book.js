@@ -18,13 +18,15 @@ class FleetView {
     });
   }
 
-  render(vehicles, range) {
-    this.vehicles = vehicles.filter((v) => v.available);
-    const count = this.vehicles.length;
-    this.note.textContent = `${count} car${count === 1 ? "" : "s"} available · ${prettyDate(range.start)} → ${prettyDate(range.end)}`;
-    this.grid.innerHTML = count
+  render(vehicles, range, onlyAvailable) {
+    const availableCount = vehicles.filter((v) => v.available).length;
+    this.vehicles = onlyAvailable ? vehicles.filter((v) => v.available) : vehicles;
+    this.note.textContent = onlyAvailable
+      ? `${this.vehicles.length} car${this.vehicles.length === 1 ? "" : "s"} available · ${prettyDate(range.start)} → ${prettyDate(range.end)}`
+      : `${availableCount} of ${vehicles.length} free · ${prettyDate(range.start)} → ${prettyDate(range.end)}`;
+    this.grid.innerHTML = this.vehicles.length
       ? this.vehicles.map((v) => this.card(v)).join("")
-      : `<div class="empty">No cars are available for these dates.</div>`;
+      : `<div class="empty">${onlyAvailable ? "No cars are available for these dates." : "No cars in this category."}</div>`;
   }
 
   card(v) {
@@ -221,6 +223,7 @@ class BookPage {
     this.fleet = new FleetView(document.getElementById("fleet-grid"), document.getElementById("fleet-note"),
       (vehicle) => this.dialog.open(vehicle, this.range()));
     this.finder = new BookingFinder(this.api, this.toast, () => this.loadFleet());
+    this.availabilityChecked = false;
   }
 
   range() {
@@ -238,9 +241,22 @@ class BookPage {
     f.start.addEventListener("change", () => {
       f.end.min = addDays(f.start.value, 1);
       if (f.end.value <= f.start.value) f.end.value = addDays(f.start.value, 1);
+      this.availabilityChecked = false;
+      this.loadFleet();
     });
-    this.searchForm.addEventListener("submit", (e) => { e.preventDefault(); this.loadFleet(); });
-    f.category.addEventListener("change", () => this.loadFleet());
+    f.end.addEventListener("change", () => {
+      this.availabilityChecked = false;
+      this.loadFleet();
+    });
+    this.searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.availabilityChecked = true;
+      this.loadFleet();
+    });
+    f.category.addEventListener("change", () => {
+      this.availabilityChecked = false;
+      this.loadFleet();
+    });
 
     try {
       const meta = await this.api.get("/api/meta");
@@ -257,7 +273,7 @@ class BookPage {
   async loadFleet() {
     try {
       const params = { category: this.searchForm.elements.category.value, ...this.range() };
-      this.fleet.render(await this.api.get("/api/vehicles", params), this.range());
+      this.fleet.render(await this.api.get("/api/vehicles", params), this.range(), this.availabilityChecked);
     } catch (err) {
       this.toast.show(err.message, true);
     }
